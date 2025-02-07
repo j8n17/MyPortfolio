@@ -6,8 +6,19 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		76C114002D564B9700CDF843 /* StockEntity+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76C113FE2D564B9700CDF843 /* StockEntity+CoreDataClass.swift */; };
+		76C114012D564B9700CDF843 /* SettingsEntity+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76C113FD2D564B9700CDF843 /* SettingsEntity+CoreDataProperties.swift */; };
+		76C114022D564B9700CDF843 /* StockEntity+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76C113FF2D564B9700CDF843 /* StockEntity+CoreDataProperties.swift */; };
+		76C114032D564B9700CDF843 /* SettingsEntity+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76C113FC2D564B9700CDF843 /* SettingsEntity+CoreDataClass.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		76B759662D54ACB3000862A8 /* MyPortfolio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyPortfolio.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		76C113FC2D564B9700CDF843 /* SettingsEntity+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsEntity+CoreDataClass.swift"; sourceTree = "<group>"; };
+		76C113FD2D564B9700CDF843 /* SettingsEntity+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsEntity+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		76C113FE2D564B9700CDF843 /* StockEntity+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StockEntity+CoreDataClass.swift"; sourceTree = "<group>"; };
+		76C113FF2D564B9700CDF843 /* StockEntity+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StockEntity+CoreDataProperties.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -32,6 +43,10 @@
 		76B7595D2D54ACB3000862A8 = {
 			isa = PBXGroup;
 			children = (
+				76C113FC2D564B9700CDF843 /* SettingsEntity+CoreDataClass.swift */,
+				76C113FD2D564B9700CDF843 /* SettingsEntity+CoreDataProperties.swift */,
+				76C113FE2D564B9700CDF843 /* StockEntity+CoreDataClass.swift */,
+				76C113FF2D564B9700CDF843 /* StockEntity+CoreDataProperties.swift */,
 				76B759682D54ACB3000862A8 /* MyPortfolio */,
 				76B759672D54ACB3000862A8 /* Products */,
 			);
@@ -119,6 +134,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				76C114002D564B9700CDF843 /* StockEntity+CoreDataClass.swift in Sources */,
+				76C114012D564B9700CDF843 /* SettingsEntity+CoreDataProperties.swift in Sources */,
+				76C114022D564B9700CDF843 /* StockEntity+CoreDataProperties.swift in Sources */,
+				76C114032D564B9700CDF843 /* SettingsEntity+CoreDataClass.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var store = StockStore()
+    @StateObject private var store = StockStore()  // 내부에서 Core Data의 context를 사용
     @State private var selectedTab: Int = 0
     @State private var editingStockData: StockEditData? = nil
     
@@ -49,6 +49,9 @@ struct ContentView: View {
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
+        // 미리보기용 PersistenceController (inMemory 옵션 사용 권장)
+        let persistenceController = PersistenceController.shared
         ContentView()
+            .environment(\.managedObjectContext, persistenceController.container.viewContext)
     }
 }
