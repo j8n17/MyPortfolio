@@ -2,126 +2,190 @@ import SwiftUI
 
 struct AssetStatusView: View {
     @EnvironmentObject var store: StockStore
-    // ContentView에서 전달받은 주식 추가용 데이터 (시트용)
+    /// ContentView에서 전달받은 주식 추가용 데이터 (시트용)
     @Binding var editingStockData: StockEditData?
-    // tap gesture를 통해 선택된 주식 상세 데이터를 저장 (모달 시트 전환용)
+    /// 탭 제스처로 선택한 주식 상세 데이터를 저장 (모달 시트 전환용)
     @State private var selectedDetailData: StockEditData? = nil
+    /// 현금 수정 시트를 표시하기 위한 상태 변수
+    @State private var showCashEdit: Bool = false
+    /// 수량 전체 수정 모드 여부
+    @State private var isEditingQuantity: Bool = false
+    /// 편집 중인 수량을 임시로 저장 (stock.id를 key로 사용)
+    @State private var editedQuantities: [UUID: String] = [:]
+    /// 포커스 관리: 현재 포커스가 가야하는 주식의 id (수량 수정란)
+    @FocusState private var focusedStock: UUID?
     
     var body: some View {
         NavigationStack {
-            Form {
-                // 상단에 총 자산 정보를 중앙 정렬하여 자연스럽게 배치
-                HStack {
-                    Spacer()
-                    VStack(spacing: 4) {
-                        Text("총 자산")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                        Text("\(store.overallTotal, specifier: "%.0f")원")
-                            .font(.title2)
-                            .fontWeight(.bold)
+            ZStack {
+                Form {
+                    // 상단에 총 자산 정보를 중앙 정렬하여 표시
+                    HStack {
+                        Spacer()
+                        VStack(spacing: 4) {
+                            Text("총 자산")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                            Text("\(store.overallTotal, specifier: "%.0f")원")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                        }
+                        Spacer()
                     }
-                    Spacer()
-                }
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-                
-                // [주식 섹션]
-                Section(header: Text("주식")) {
-                    ForEach(store.stocks.filter { $0.category == "주식" }) { stock in
-                        assetRowView(for: stock)
-                            .onTapGesture {
-                                selectedDetailData = StockEditData(stock: stock)
-                            }
-                            .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) {
-                                    if let index = store.stocks.firstIndex(where: { $0.id == stock.id }) {
-                                        store.stocks.remove(at: index)
-                                        store.save()
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                    
+                    // [주식 섹션]
+                    Section(header: Text("주식")) {
+                        // 주식 섹션은 주식 코드 오름차순으로 정렬
+                        let sortedStocks = store.stocks.filter { $0.category == "주식" }
+                            .sorted { (s1, s2) in (Int(s1.code) ?? 0) < (Int(s2.code) ?? 0) }
+                        
+                        ForEach(sortedStocks) { stock in
+                            assetRowView(for: stock)
+                                .onTapGesture {
+                                    if !isEditingQuantity {
+                                        selectedDetailData = StockEditData(stock: stock)
                                     }
-                                } label: {
-                                    Label("삭제", systemImage: "trash")
                                 }
-                            }
-                    }
-                }
-                
-                // [채권 섹션]
-                Section(header: Text("채권")) {
-                    ForEach(store.stocks.filter { $0.category == "현금 및 채권" }) { asset in
-                        assetRowView(for: asset)
-                            .onTapGesture {
-                                selectedDetailData = StockEditData(stock: asset)
-                            }
-                            .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) {
-                                    if let index = store.stocks.firstIndex(where: { $0.id == asset.id }) {
-                                        store.stocks.remove(at: index)
-                                        store.save()
+                                .swipeActions(edge: .trailing) {
+                                    Button(role: .destructive) {
+                                        if let index = store.stocks.firstIndex(where: { $0.id == stock.id }) {
+                                            store.stocks.remove(at: index)
+                                            store.save()
+                                        }
+                                    } label: {
+                                        Label("삭제", systemImage: "trash")
                                     }
-                                } label: {
-                                    Label("삭제", systemImage: "trash")
                                 }
-                            }
+                        }
                     }
                     
-                    // 현금 행: 현금은 삭제할 대상이 아니므로 swipeActions 없이 표시
-                    HStack(alignment: .bottom) {
-                        Text("현금")
-                            .font(.body)
-                        Spacer()
-                        Text("\(FormatterHelper.displayCurrency.string(from: NSNumber(value: store.cash)) ?? "\(store.cash)")원")
-                            .font(.body)
-                            .foregroundColor(.gray)
+                    // [채권 섹션]
+                    Section(header: Text("채권")) {
+                        ForEach(store.stocks.filter { $0.category == "현금 및 채권" }
+                                    .sorted { (s1, s2) in (Int(s1.code) ?? 0) < (Int(s2.code) ?? 0) }
+                        ) { asset in
+                            assetRowView(for: asset)
+                                .onTapGesture {
+                                    if !isEditingQuantity {
+                                        selectedDetailData = StockEditData(stock: asset)
+                                    }
+                                }
+                                .swipeActions(edge: .trailing) {
+                                    Button(role: .destructive) {
+                                        if let index = store.stocks.firstIndex(where: { $0.id == asset.id }) {
+                                            store.stocks.remove(at: index)
+                                            store.save()
+                                        }
+                                    } label: {
+                                        Label("삭제", systemImage: "trash")
+                                    }
+                                }
+                        }
+                        
+                        // 현금 행 (현금은 삭제 대상이 아니므로 swipeActions 없이 표시)
+                        HStack(alignment: .bottom) {
+                            Text("현금")
+                                .font(.body)
+                            Spacer()
+                            Text("\(FormatterHelper.displayCurrency.string(from: NSNumber(value: store.cash)) ?? "\(store.cash)")원")
+                                .font(.body)
+                                .foregroundColor(.gray)
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            showCashEdit = true
+                        }
                     }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        // 예시: 현금 수정 화면으로 전환하고 싶다면 별도 상태 변수를 사용
-                        // 여기서는 상세 화면 전환 없이 아무 동작도 하지 않음.
-                    }
+                } // Form 끝
+                
+                // 떠 있는 + 버튼 (새 주식 추가용)
+                Button(action: {
+                    editingStockData = StockEditData(stock: nil)
+                }) {
+                    Image(systemName: "plus")
+                        .font(.title)
+                        .foregroundColor(.white)
+                        .frame(width: 60, height: 60)
+                        .background(Color.blue)
+                        .clipShape(Circle())
+                        .shadow(radius: 4)
                 }
-            } // Form
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+            } // ZStack 끝
             .navigationTitle("자산 현황")
             .toolbar {
-                // 자산 현황 탭에 새 주식 추가를 위한 + 버튼
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        editingStockData = StockEditData(stock: nil)
-                    } label: {
-                        Image(systemName: "plus")
+                    if isEditingQuantity {
+                        Button("완료") {
+                            // 입력한 수량을 저장
+                            for index in store.stocks.indices {
+                                let stock = store.stocks[index]
+                                if let newQuantityString = editedQuantities[stock.id],
+                                   let newQuantity = Int(newQuantityString) {
+                                    store.stocks[index].quantity = newQuantity
+                                }
+                            }
+                            store.save()
+                            // 편집 모드 종료 및 임시 데이터 초기화
+                            isEditingQuantity = false
+                            editedQuantities = [:]
+                            focusedStock = nil
+                        }
+                    } else {
+                        Menu {
+                            Button("수량 전체 수정") {
+                                // 각 주식의 현재 수량을 임시 저장 후 편집 모드 활성화
+                                for stock in store.stocks {
+                                    editedQuantities[stock.id] = "\(stock.quantity)"
+                                }
+                                isEditingQuantity = true
+                                
+                                // 주식 섹션에서 주식 코드 기준 오름차순 정렬 후 첫 번째 주식에 포커스 부여
+                                let sortedStocks = store.stocks.filter { $0.category == "주식" }
+                                    .sorted { (s1, s2) in (Int(s1.code) ?? 0) < (Int(s2.code) ?? 0) }
+                                if let firstStock = sortedStocks.first {
+                                    focusedStock = firstStock.id
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .imageScale(.large)
+                        }
                     }
                 }
             }
-            // selectedDetailData가 설정되면 모달 시트로 StockDetailView를 표시 (아래에서 위로 등장)
+            // 주식 상세 데이터 모달 시트 (편집 모드가 아닐 때)
             .sheet(item: $selectedDetailData) { detail in
-                // StockDetailView를 NavigationView로 감싸서 상단 네비게이션 바가 보이도록 함
-                NavigationView {
-                    StockDetailView(
-                        detailData: detail,
-                        onSave: { updatedStock in
-                            if let index = store.stocks.firstIndex(where: { $0.id == updatedStock.id }) {
-                                store.stocks[index] = updatedStock
-                            }
-                            store.save()
+                StockDetailView(
+                    detailData: detail,
+                    onSave: { updatedStock in
+                        if let index = store.stocks.firstIndex(where: { $0.id == updatedStock.id }) {
+                            store.stocks[index] = updatedStock
                         }
-                    )
-                }
+                        store.save()
+                    }
+                )
             }
-        }
+            // 현금 수정 시트를 위한 모달 시트
+            .sheet(isPresented: $showCashEdit) {
+                CashEditView(cash: $store.cash)
+            }
+        } // NavigationStack 끝
     }
     
     /// 주식/채권 행을 구성하는 뷰 (좌측: 이름, 코드, 현재가(전일대비); 우측: 보유 수량, 평가 금액)
     @ViewBuilder
     private func assetRowView(for stock: Stock) -> some View {
-        // 전일 대비 변동률 색상 결정
-        let variationColor: Color = stock.dailyVariation > 0 ? .red : (stock.dailyVariation < 0 ? .blue : .gray)
-        
         HStack(alignment: .bottom) {
-            // 왼쪽 영역
+            // 왼쪽 정보 영역
             VStack(alignment: .leading, spacing: 4) {
                 Text(stock.name)
                     .font(.body)
-                // 종목 코드는 단순 코드만 표시
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                 Text("\(stock.code)")
                     .font(.caption2)
                     .foregroundColor(.gray)
@@ -130,17 +194,30 @@ struct AssetStatusView: View {
                     Text("(")
                         .foregroundColor(.gray)
                     Text("\(stock.dailyVariation, specifier: "%.2f")%")
-                        .foregroundColor(variationColor)
+                        .foregroundColor(stock.variationColor)
                     Text(")")
                         .foregroundColor(.gray)
                 }
                 .font(.caption2)
             }
             Spacer()
-            // 오른쪽 영역
+            // 오른쪽 정보 영역
             VStack(alignment: .trailing, spacing: 2) {
-                Text("\(stock.quantity)주")
-                    .font(.body)
+                if isEditingQuantity {
+                    HStack(spacing: 2) {
+                        TextField("", text: Binding(
+                            get: { editedQuantities[stock.id] ?? "\(stock.quantity)" },
+                            set: { editedQuantities[stock.id] = $0 }
+                        ))
+                        .keyboardType(.numbersAndPunctuation)
+                        .frame(width: 50)
+                        .focused($focusedStock, equals: stock.id)
+                        Text("주")
+                    }
+                } else {
+                    Text("\(stock.quantity)주")
+                        .font(.body)
+                }
                 Text("\(FormatterHelper.displayCurrency.string(from: NSNumber(value: stock.currentValue)) ?? "\(stock.currentValue)")원")
                     .font(.body)
                     .foregroundColor(.gray)

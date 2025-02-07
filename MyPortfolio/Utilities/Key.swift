@@ -1,3 +1,4 @@
+// Key.swift
 import Foundation
 
 /// API 키들을 담는 구조체
@@ -9,10 +10,17 @@ struct APIKeys {
 
 /// 접근 토큰 응답 모델 (API 스펙에 맞게 키를 정확히 일치)
 struct AccessTokenResponse: Codable {
-    let access_token: String
-    let token_type: String
-    let expires_in: Int
-    let access_token_token_expired: String
+    let accessToken: String
+    let tokenType: String
+    let expiresIn: Int
+    let tokenExpired: String
+
+    enum CodingKeys: String, CodingKey {
+        case accessToken = "access_token"
+        case tokenType   = "token_type"
+        case expiresIn   = "expires_in"
+        case tokenExpired = "access_token_token_expired"
+    }
 }
 
 /// KeyManager 싱글톤: 토큰 발급, 저장 및 앱 키/시크릿 관리를 담당
@@ -82,22 +90,21 @@ class KeyManager {
             let decoder = JSONDecoder()
             let tokenResponse = try decoder.decode(AccessTokenResponse.self, from: data)
             
-            // access_token_token_expired를 Date로 파싱 (ISO8601 형식으로 가정)
-            let expirationString = tokenResponse.access_token_token_expired
+            // tokenExpired를 Date로 파싱 (ISO8601 형식으로 가정)
+            let expirationString = tokenResponse.tokenExpired
             let formatter = ISO8601DateFormatter()
+            let defaults = UserDefaults.standard
             if let expirationDate = formatter.date(from: expirationString) {
-                let defaults = UserDefaults.standard
-                defaults.set(tokenResponse.access_token, forKey: tokenKey)
+                defaults.set(tokenResponse.accessToken, forKey: tokenKey)
                 defaults.set(expirationDate, forKey: tokenExpirationKey)
             } else {
-                // 파싱 실패 시 expires_in(초) 값을 기준으로 만료 시각 계산
-                let expirationDate = Date().addingTimeInterval(TimeInterval(tokenResponse.expires_in))
-                let defaults = UserDefaults.standard
-                defaults.set(tokenResponse.access_token, forKey: tokenKey)
+                // 파싱 실패 시 expiresIn(초) 값을 기준으로 만료 시각 계산
+                let expirationDate = Date().addingTimeInterval(TimeInterval(tokenResponse.expiresIn))
+                defaults.set(tokenResponse.accessToken, forKey: tokenKey)
                 defaults.set(expirationDate, forKey: tokenExpirationKey)
             }
             
-            return tokenResponse.access_token
+            return tokenResponse.accessToken
         } catch {
             return nil
         }

@@ -19,7 +19,6 @@ struct StockDetailView: View {
                     // 종목 코드 입력
                     HStack {
                         Text("종목 코드")
-                        Spacer()
                         TextField("예: 278530", text: $detailData.code)
                             .keyboardType(.numbersAndPunctuation)
                             .multilineTextAlignment(.trailing)
@@ -28,7 +27,6 @@ struct StockDetailView: View {
                     // 목표 비율 입력
                     HStack {
                         Text("목표 비율")
-                        Spacer()
                         TextField("예: 20.0", text: $detailData.targetPercentage)
                             .keyboardType(.numbersAndPunctuation)
                             .multilineTextAlignment(.trailing)
@@ -37,7 +35,6 @@ struct StockDetailView: View {
                     // 보유 수량 입력
                     HStack {
                         Text("보유 수량")
-                        Spacer()
                         TextField("예: 10", text: $detailData.quantity)
                             .keyboardType(.numbersAndPunctuation)
                             .multilineTextAlignment(.trailing)

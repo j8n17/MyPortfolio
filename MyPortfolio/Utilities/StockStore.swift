@@ -6,7 +6,7 @@ class StockStore: ObservableObject {
     @Published var cash: Double = 0.0
     
     // 기본 리밸런싱 기준 증감율 (8.0)
-    @Published var threshold: Double = 8.0 {
+    @Published var threshold: Double = 12.0 {
         didSet { save() }
     }
     
@@ -38,7 +38,7 @@ class StockStore: ObservableObject {
         if let storedThreshold = UserDefaults.standard.object(forKey: thresholdKey) as? Double {
             threshold = storedThreshold
         } else {
-            threshold = 8.0
+            threshold = 12.0
         }
     }
     
@@ -57,7 +57,7 @@ class StockStore: ObservableObject {
     func resetData() {
         stocks = defaultStocks()
         cash = 234000
-        threshold = 8.0
+        threshold = 12.0
         save()
     }
     

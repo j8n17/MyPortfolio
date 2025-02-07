@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 struct Stock: Identifiable, Equatable, Codable {
     let id: UUID
@@ -15,5 +16,18 @@ struct Stock: Identifiable, Equatable, Codable {
     // 현재 가치 = 현재가 × 보유 수량 (Double로 계산)
     var currentValue: Double {
         Double(currentPrice * quantity)
+    }
+}
+
+extension Stock {
+    /// dailyVariation 값에 따라 전일 대비 변동률에 적절한 색상을 반환합니다.
+    var variationColor: Color {
+        if dailyVariation > 0 {
+            return .red
+        } else if dailyVariation < 0 {
+            return .blue
+        } else {
+            return .gray
+        }
     }
 }
