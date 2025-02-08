@@ -21,12 +21,14 @@ struct SettingsView: View {
                 Section(header: Text("설정")) {
                     HStack {
                         Text("리밸런싱 기준 증감율")
-                        TextField("예: 12.0",
-                                  value: $store.threshold,
-                                  formatter: FormatterHelper.thresholdFormatter)
+                        TextField("예: 12.0", value: $store.threshold, formatter: FormatterHelper.thresholdFormatter)
                             .keyboardType(.numbersAndPunctuation)
                             .multilineTextAlignment(.trailing)
+                            .onChange(of: store.threshold) {
+                                store.save()
+                            }
                     }
+
                     
                     VStack(alignment: .leading, spacing: 4) {
                         Button("API Key") {

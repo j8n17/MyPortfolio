@@ -1,4 +1,3 @@
-// Key.swift
 import Foundation
 
 /// API 키들을 담는 구조체
