@@ -32,10 +32,11 @@ struct PortfolioView: View {
     
     /// 각 주식의 현재가, 변동률, 주식 이름을 비동기적으로 업데이트하는 함수
     private func updateStockPrices() async {
+        let keys = await getKey()
         for i in store.stocks.indices {
             let code = store.stocks[i].code
-            async let priceResult = StockPriceFetcher.fetchCurrentPrice(for: code)
-            async let fetchedName = StockPriceFetcher.fetchStockName(for: code)
+            async let priceResult = StockPriceFetcher.fetchCurrentPrice(for: code, using: keys)
+            async let fetchedName = StockPriceFetcher.fetchStockName(for: code, using: keys)
             let (result, name) = await (priceResult, fetchedName)
             if result.price > 0 {
                 store.stocks[i].currentPrice = result.price

@@ -12,6 +12,18 @@ class StockStore: ObservableObject {
     init(context: NSManagedObjectContext = PersistenceController.shared.container.viewContext) {
         self.context = context
         load()
+        // 메인 컨텍스트의 변경을 감지하면 load()를 호출하여 published 프로퍼티를 업데이트합니다.
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(contextDidChange(_:)),
+                                               name: NSNotification.Name.NSManagedObjectContextObjectsDidChange,
+                                               object: context)
+    }
+    
+    @objc private func contextDidChange(_ notification: Notification) {
+        // 메인 스레드에서 변경사항 반영
+        DispatchQueue.main.async {
+            self.load()
+        }
     }
     
     func load() {
@@ -40,14 +52,22 @@ class StockStore: ObservableObject {
         self.cash = settings?.cash ?? 0.0
         self.threshold = settings?.threshold ?? 12.0
     }
-
     
     func save() {
-        // Core Data 저장 전, 기존 StockEntity들을 모두 삭제하고 현재 stocks 배열의 값을 다시 저장하는 방식 (간단한 구현 예시)
+        // 기존 StockEntity들을 삭제하기 위해 NSBatchDeleteRequest를 사용합니다.
         let fetchRequest: NSFetchRequest<NSFetchRequestResult> = StockEntity.fetchRequest()
         let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+        // 삭제한 객체들의 objectID를 반환하도록 설정
+        deleteRequest.resultType = .resultTypeObjectIDs
+        
         do {
-            try context.execute(deleteRequest)
+            if let result = try context.execute(deleteRequest) as? NSBatchDeleteResult,
+               let objectIDs = result.result as? [NSManagedObjectID] {
+                let changes = [NSDeletedObjectsKey: objectIDs]
+                // 백그라운드에서 저장한 변경사항을 메인 컨텍스트에 병합합니다.
+                let mainContext = PersistenceController.shared.container.viewContext
+                NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [mainContext])
+            }
         } catch {
             print("Error deleting old stocks: \(error)")
         }

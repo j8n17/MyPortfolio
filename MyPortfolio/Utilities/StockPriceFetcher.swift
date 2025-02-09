@@ -13,7 +13,6 @@ struct InquiryPriceResponse: Codable {
 // MARK: - 주식 이름(상품명) 조회 관련 모델
 struct StockNameOutput: Codable {
     let prdt_abrv_name: String   // 상품명 (주식 이름)
-    // 필요한 경우 다른 필드들도 추가할 수 있음
 }
 
 struct StockNameResponse: Codable {
@@ -31,7 +30,11 @@ struct StockPriceFetcher {
     static let baseStockNameURL = "https://openapi.koreainvestment.com:9443/uapi/domestic-stock/v1/quotations/search-info"
     
     /// 현재가와 전일 대비 백분율을 함께 반환하는 함수
-    static func fetchCurrentPrice(for code: String) async -> (price: Int, variation: Double) {
+    /// - Parameters:
+    ///   - code: 주식 종목 코드
+    ///   - keys: 미리 받아둔 APIKeys (토큰, appKey, appSecret)
+    /// - Returns: (price, variation) 튜플
+    static func fetchCurrentPrice(for code: String, using keys: APIKeys) async -> (price: Int, variation: Double) {
         let query = "?FID_COND_MRKT_DIV_CODE=\(marketDivCode)&FID_INPUT_ISCD=\(code)"
         guard let url = URL(string: basePriceURL + query) else {
             return (0, 0.0)
@@ -41,8 +44,6 @@ struct StockPriceFetcher {
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        // 비동기적으로 유효한 토큰과 키 정보를 가져옴
-        let keys = await getKey()
         request.setValue("Bearer \(keys.token)", forHTTPHeaderField: "authorization")
         request.setValue(keys.appKey, forHTTPHeaderField: "appKey")
         request.setValue(keys.appSecret, forHTTPHeaderField: "appSecret")
@@ -65,10 +66,11 @@ struct StockPriceFetcher {
     }
     
     /// 주식 이름(상품명)을 가져오는 함수
-    /// - Parameter code: 상품번호(PDNO), 예를 들어 "000660"
-    /// - Returns: 주식 이름 문자열 (실패 시 빈 문자열)
-    static func fetchStockName(for code: String) async -> String {
-        // PRDT_TYPE_CD: "300"은 주식에 해당됨
+    /// - Parameters:
+    ///   - code: 주식 종목 코드
+    ///   - keys: 미리 받아둔 APIKeys
+    /// - Returns: 주식 이름 (실패 시 빈 문자열)
+    static func fetchStockName(for code: String, using keys: APIKeys) async -> String {
         let query = "?PDNO=\(code)&PRDT_TYPE_CD=300"
         guard let url = URL(string: baseStockNameURL + query) else {
             return ""
@@ -76,16 +78,12 @@ struct StockPriceFetcher {
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        // API 문서에서 요구하는 Content-Type (charset 포함)
         request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
         
-        // 비동기적으로 유효한 토큰과 키 정보를 가져옴
-        let keys = await getKey()
         request.setValue("Bearer \(keys.token)", forHTTPHeaderField: "authorization")
         request.setValue(keys.appKey, forHTTPHeaderField: "appKey")
         request.setValue(keys.appSecret, forHTTPHeaderField: "appSecret")
         request.setValue(trIDStockName, forHTTPHeaderField: "tr_id")
-        // 고객 타입: 개인은 "P", 법인은 "B" (여기서는 "P"로 가정)
         request.setValue("P", forHTTPHeaderField: "custtype")
         
         do {

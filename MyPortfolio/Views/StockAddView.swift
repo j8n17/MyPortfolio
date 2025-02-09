@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct StockAddView: View {
-    @State var addData: StockEditData  // 기존 StockEditData를 재사용 (추가용으로 id 등은 nil 혹은 새 값)
+    @State var addData: StockEditData  // 기존 StockEditData를 재사용
     var onCancel: () -> Void
     var onSave: (Stock) -> Void
     
@@ -46,22 +46,19 @@ struct StockAddView: View {
     }
     
     private func saveStock() {
-        // 저장 버튼 클릭 시 비동기로 API 호출 후 Stock 객체를 생성하여 onSave 호출
         Task {
-            // 입력된 종목 코드를 이용해 현재가 및 전일 대비 변동률 조회
-            let (price, variation) = await StockPriceFetcher.fetchCurrentPrice(for: addData.code)
-            // 입력된 종목 코드를 이용해 주식 이름(상품명) 조회
-            let name = await StockPriceFetcher.fetchStockName(for: addData.code)
+            // API 키를 미리 받아서 재사용
+            let keys = await getKey()
+            let (price, variation) = await StockPriceFetcher.fetchCurrentPrice(for: addData.code, using: keys)
+            let name = await StockPriceFetcher.fetchStockName(for: addData.code, using: keys)
             
-            // 목표 비율과 보유 수량은 텍스트필드 입력값을 변환
             guard let target = Double(addData.targetPercentage),
                   let qty = Int(addData.quantity) else {
-                // 변환 실패 시 에러처리 (예: Alert 등) – 여기서는 단순 return 처리
                 return
             }
             
             let stock = Stock(
-                id: addData.id, // 추가 시에는 새로운 id를 부여하거나 nil일 수 있음
+                id: addData.id,
                 name: name,
                 code: addData.code,
                 targetPercentage: target,
@@ -71,7 +68,6 @@ struct StockAddView: View {
                 dailyVariation: variation
             )
             
-            // 메인 스레드에서 onSave 호출
             await MainActor.run {
                 onSave(stock)
             }
