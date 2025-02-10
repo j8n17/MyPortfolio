@@ -9,6 +9,7 @@ struct StockEditData: Identifiable, Hashable {
     var currentPrice: String // 실제 입력은 받지 않으므로 무시됨
     var quantity: String           // 정수 입력값을 문자열로 관리
     var category: String           // "주식" 또는 "현금 및 채권"
+    var dailyVariation: Double
     
     init(stock: Stock?) {
         if let stock = stock {
@@ -20,6 +21,7 @@ struct StockEditData: Identifiable, Hashable {
             self.currentPrice = String(stock.currentPrice)
             self.quantity = String(stock.quantity)
             self.category = stock.category
+            self.dailyVariation = stock.dailyVariation
         } else {
             self.id = UUID()
             self.name = ""
@@ -28,6 +30,7 @@ struct StockEditData: Identifiable, Hashable {
             self.currentPrice = ""
             self.quantity = ""
             self.category = "주식"
+            self.dailyVariation = 0.0
         }
     }
     

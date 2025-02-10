@@ -7,13 +7,15 @@ struct ContentView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            PortfolioView(editingStockData: $editingStockData)
+            // PortfolioView는 더 이상 주식 추가용 editingStockData를 사용하지 않습니다.
+            PortfolioView()
                 .environmentObject(store)
                 .tag(0)
                 .tabItem {
                     Label("포트폴리오", systemImage: "chart.bar")
                 }
             
+            // AssetStatusView는 주식 추가를 위해 editingStockData 바인딩을 사용합니다.
             AssetStatusView(editingStockData: $editingStockData)
                 .environmentObject(store)
                 .tag(1)
@@ -28,28 +30,12 @@ struct ContentView: View {
                     Label("설정", systemImage: "gear")
                 }
         }
-        .sheet(isPresented: Binding<Bool>(
-            get: { editingStockData != nil && (editingStockData?.name.isEmpty ?? true) },
-            set: { if !$0 { editingStockData = nil } }
-        )) {
-            if let addData = editingStockData {
-                StockAddView(
-                    addData: addData,
-                    onCancel: { editingStockData = nil },
-                    onSave: { newStock in
-                        store.stocks.append(newStock)
-                        store.save()
-                        editingStockData = nil
-                    }
-                )
-            }
-        }
     }
 }
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        // 미리보기용 PersistenceController (inMemory 옵션 사용 권장)
+        // 미리보기에서는 inMemory 옵션 사용을 권장합니다.
         let persistenceController = PersistenceController.shared
         ContentView()
             .environment(\.managedObjectContext, persistenceController.container.viewContext)

@@ -26,7 +26,7 @@ struct AssetStatusView: View {
                             Text("총 자산")
                                 .font(.caption)
                                 .foregroundColor(.gray)
-                            Text("\(store.overallTotal, specifier: "%.0f")원")
+                            Text("\(store.totalAssets, specifier: "%.0f")원")
                                 .font(.title2)
                                 .fontWeight(.bold)
                         }
@@ -172,6 +172,23 @@ struct AssetStatusView: View {
             // 현금 수정 시트를 위한 모달 시트
             .sheet(isPresented: $showCashEdit) {
                 CashEditView(cash: $store.cash)
+            }
+            // 주식 추가 시트
+            .sheet(isPresented: Binding<Bool>(
+                get: { editingStockData != nil && (editingStockData?.name.isEmpty ?? true) },
+                set: { if !$0 { editingStockData = nil } }
+            )) {
+                if let addData = editingStockData {
+                    StockAddView(
+                        addData: addData,
+                        onCancel: { editingStockData = nil },
+                        onSave: { newStock in
+                            store.stocks.append(newStock)
+                            store.save()
+                            editingStockData = nil
+                        }
+                    )
+                }
             }
         } // NavigationStack 끝
     }

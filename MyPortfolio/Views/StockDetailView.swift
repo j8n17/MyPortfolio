@@ -47,24 +47,22 @@ struct StockDetailView: View {
     
     private func saveStock() {
         Task {
-            let keys = await getKey()
-            let (price, variation) = await StockPriceFetcher.fetchCurrentPrice(for: detailData.code, using: keys)
-            let name = await StockPriceFetcher.fetchStockName(for: detailData.code, using: keys)
-            
+            // detailData의 targetPercentage, quantity, currentPrice를 문자열에서 숫자로 변환
             guard let target = Double(detailData.targetPercentage),
-                  let qty = Int(detailData.quantity) else {
+                  let qty = Int(detailData.quantity),
+                  let currentPrice = Int(detailData.currentPrice) else {
                 return
             }
             
             let stock = Stock(
                 id: detailData.id,
-                name: name,
+                name: detailData.name,
                 code: detailData.code,
                 targetPercentage: target,
-                currentPrice: price,
+                currentPrice: currentPrice,
                 quantity: qty,
                 category: detailData.category,
-                dailyVariation: variation
+                dailyVariation: detailData.dailyVariation
             )
             
             await MainActor.run {

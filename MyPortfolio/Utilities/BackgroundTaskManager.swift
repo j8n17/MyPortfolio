@@ -13,21 +13,26 @@ class BackgroundTaskManager {
         })
     }
     
-    func next10AM() -> Date? {
-        // 테스트용: 현재로부터 1800초 후(30분 후)에 실행하도록 설정
-        return Date().addingTimeInterval(180)
+    func nextTime() -> Date? {
+        // 현재로부터 최소 3600초 후(1시간 후)부터 실행하도록 설정
+        return Date().addingTimeInterval(3600)
     }
     
-    func isWeekday(date: Date) -> Bool {
+    func isMarketHours(date: Date) -> Bool {
+        let hour = Calendar.current.component(.hour, from: date)
         let weekday = Calendar.current.component(.weekday, from: date)
-        // 1: 일요일, 7: 토요일
-        return weekday != 1 && weekday != 7
+
+        // 주식 시장 개장 시간: 09:00 ~ 16:00 (4시)
+        let isWithinMarketHours = hour >= 9 && hour < 16
+        let isWeekday = weekday != 1 && weekday != 7 // 1: 일요일, 7: 토요일
+
+        return isWeekday && isWithinMarketHours
     }
     
     /// 백그라운드 작업 예약
     func scheduleAppRefresh() {
         let request = BGAppRefreshTaskRequest(identifier: refreshTaskIdentifier)
-        request.earliestBeginDate = next10AM()
+        request.earliestBeginDate = nextTime()
         do {
             try BGTaskScheduler.shared.submit(request)
             print("백그라운드 작업 예약 성공: \(request.earliestBeginDate!)")
@@ -39,18 +44,13 @@ class BackgroundTaskManager {
     /// 백그라운드 작업 처리
     func handleAppRefresh(task: BGAppRefreshTask) {
         print("백그라운드 작업 시작")
+        scheduleAppRefresh() // 다음 작업 예약 (반복)
         
-        // 현재 시간 확인: 시(hour)가 0시 이상 9시 미만이면 작업을 건너뜁니다.
-        let hour = Calendar.current.component(.hour, from: Date())
-        if hour >= 16 && hour < 9 {
-            print("현재 시간이 \(hour)시로, 밤 12시부터 오전 9시 사이입니다. 작업을 건너뜁니다.")
-            scheduleAppRefresh()  // 다음 작업 예약
+        if !isMarketHours(date: Date()) {
+            print("현재 시간은 주식 시장 개장 시간이 아닙니다. 작업을 건너뜁니다.")
             task.setTaskCompleted(success: true)
             return
         }
-        
-        // 다음 작업 예약 (반복)
-        scheduleAppRefresh()
         
         let queue = OperationQueue()
         queue.maxConcurrentOperationCount = 1

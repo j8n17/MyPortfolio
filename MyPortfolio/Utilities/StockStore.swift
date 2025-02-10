@@ -6,6 +6,31 @@ class StockStore: ObservableObject {
     @Published var cash: Double = 0.0
     @Published var threshold: Double = 12.0
     
+    /// 모든 주식의 목표 비율 합계 계산
+    var combinedTarget: Double {
+        stocks.map { $0.targetPercentage }.reduce(0, +)
+    }
+    
+    /// 전체 자산 = 모든 주식의 현재 가치 합계 + 현금
+    var totalAssets: Double {
+        stocks.map { $0.currentValue }.reduce(0, +) + cash
+    }
+    
+    var maxChange: Double {
+        // 각 주식의 changeRate(withOverallTotal:) 값을 절대값으로 변환한 후 최대값을 구함.
+        return stocks.map { abs($0.changeRate) }.max() ?? 0.0
+    }
+    
+    var needRebalance: Bool {
+        return maxChange > threshold
+    }
+    
+    /// 현금 비중을 숫자(%)로 계산 (전체 자산 대비 현금의 비율)
+    var cashPercentage: Double {
+        guard totalAssets > 0 else { return 0.0 }
+        return cash / totalAssets * 100
+    }
+    
     private let context: NSManagedObjectContext
     private var settings: SettingsEntity?
     
@@ -20,10 +45,47 @@ class StockStore: ObservableObject {
     }
     
     @objc private func contextDidChange(_ notification: Notification) {
-        // 메인 스레드에서 변경사항 반영
         DispatchQueue.main.async {
             self.load()
         }
+    }
+    
+    /// 선택된 주식들에 대해 리밸런싱을 수행하는 함수 (Stock의 desiredQuantity computed property 사용)
+    func rebalanceStocks(selectedIDs: Set<Stock.ID>) {
+        let pastTotal = self.totalAssets
+        for index in stocks.indices {
+            if selectedIDs.contains(stocks[index].id) {
+                let stock = stocks[index]
+                if stock.targetPercentage == 0 || stock.currentPrice <= 0 {
+                    stocks[index].quantity = 0
+                } else {
+                    stocks[index].quantity = stock.desiredQuantity
+                }
+            }
+        }
+        self.cash = pastTotal - stocks.map { $0.currentValue }.reduce(0, +)
+        save()
+    }
+    
+    /// API를 통해 각 주식의 현재 가격, 변동률, 주식 이름을 업데이트하는 비동기 함수
+    func updateStockPrices() async {
+        let keys = await getKey()
+        for i in stocks.indices {
+            let code = stocks[i].code
+            async let priceResult = StockPriceFetcher.fetchCurrentPrice(for: code, using: keys)
+            async let fetchedName = StockPriceFetcher.fetchStockName(for: code, using: keys)
+            let (result, name) = await (priceResult, fetchedName)
+            
+            // 메인 스레드에서 published 프로퍼티 업데이트 실행
+            await MainActor.run {
+                if result.price > 0 {
+                    stocks[i].currentPrice = result.price
+                    stocks[i].dailyVariation = result.variation
+                }
+                stocks[i].name = name
+            }
+        }
+        save()
     }
     
     func load() {
@@ -31,7 +93,6 @@ class StockStore: ObservableObject {
         do {
             let stockEntities = try context.fetch(request)
             if stockEntities.isEmpty {
-                // 저장된 데이터가 없으면 defaultStocks 데이터를 사용하여 populate
                 self.stocks = defaultStocks()
                 // defaultStocks의 각 항목을 Core Data에 추가
                 for stock in self.stocks {
@@ -51,20 +112,20 @@ class StockStore: ObservableObject {
         self.settings = SettingsEntity.fetchOrCreate(context: context)
         self.cash = settings?.cash ?? 0.0
         self.threshold = settings?.threshold ?? 12.0
+        
+        Stock.totalAssets = self.totalAssets
     }
     
     func save() {
         // 기존 StockEntity들을 삭제하기 위해 NSBatchDeleteRequest를 사용합니다.
         let fetchRequest: NSFetchRequest<NSFetchRequestResult> = StockEntity.fetchRequest()
         let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-        // 삭제한 객체들의 objectID를 반환하도록 설정
         deleteRequest.resultType = .resultTypeObjectIDs
         
         do {
             if let result = try context.execute(deleteRequest) as? NSBatchDeleteResult,
                let objectIDs = result.result as? [NSManagedObjectID] {
                 let changes = [NSDeletedObjectsKey: objectIDs]
-                // 백그라운드에서 저장한 변경사항을 메인 컨텍스트에 병합합니다.
                 let mainContext = PersistenceController.shared.container.viewContext
                 NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [mainContext])
             }
@@ -84,13 +145,14 @@ class StockStore: ObservableObject {
         
         do {
             try context.save()
+            // 저장 후 전체 자산을 반영하여 총 자산 업데이트
+            Stock.totalAssets = self.totalAssets
         } catch {
             print("Error saving context: \(error)")
         }
     }
     
     func resetData() {
-        // 기본 데이터를 다시 설정
         self.stocks = defaultStocks()
         self.cash = 234000
         self.threshold = 12.0
@@ -107,38 +169,5 @@ class StockStore: ObservableObject {
             Stock(id: UUID(), name: "ACE 26-06 회사채", code: "461270", targetPercentage: 15, currentPrice: 10945, quantity: 751, category: "현금 및 채권", dailyVariation: 0.0),
             Stock(id: UUID(), name: "TIGER 27-04회사채", code: "480260", targetPercentage: 17, currentPrice: 52430, quantity: 178, category: "현금 및 채권", dailyVariation: 0.0)
         ]
-    }
-    
-    var combinedTarget: Double {
-        stocks.map { $0.targetPercentage }.reduce(0, +)
-    }
-    
-    var overallTotal: Double {
-        stocks.map { $0.currentValue }.reduce(0, +) + cash
-    }
-    
-    func needsRebalancing(for stock: Stock, threshold: Double) -> Bool {
-        guard overallTotal > 0 else { return false }
-        
-        let currentFraction = stock.currentValue / overallTotal
-        let targetFraction = stock.targetPercentage / 100.0
-        
-        if targetFraction == 0 {
-            return currentFraction > 0
-        }
-        
-        let changeFraction = (currentFraction - targetFraction) / targetFraction
-        let thresholdFraction = threshold / 100.0
-        return abs(changeFraction) >= thresholdFraction
-    }
-    
-    func overallNeedsRebalancing(threshold: Double) -> Bool {
-        guard overallTotal > 0 else { return false }
-        for stock in stocks {
-            if needsRebalancing(for: stock, threshold: threshold) {
-                return true
-            }
-        }
-        return false
     }
 }

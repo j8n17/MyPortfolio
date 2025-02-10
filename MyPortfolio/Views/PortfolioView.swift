@@ -2,49 +2,21 @@ import SwiftUI
 
 struct PortfolioView: View {
     @EnvironmentObject var store: StockStore
-    /// 주식 추가용 데이터(새 주식 등록 시 사용)를 부모로부터 Binding으로 전달받음
-    @Binding var editingStockData: StockEditData?
     
     @State private var isSelectingStocks: Bool = false
     @State private var selectedStockIDs: Set<Stock.ID> = []
     @State private var showRebalancingWarning: Bool = false
     
-    // MARK: - Computed Properties
-    
-    private var cashPercentage: String {
-        if store.overallTotal > 0 {
-            let percent = store.cash / store.overallTotal * 100
-            return String(format: "%.1f%%", percent)
-        } else {
-            return "0.0%"
-        }
-    }
-    
+    // 주식만 필터링하여 정렬
     private var stocksOnly: [Stock] {
         store.stocks.filter { $0.category == "주식" }
             .sorted { (s1, s2) in (Int(s1.code) ?? 0) < (Int(s2.code) ?? 0) }
     }
     
+    // 현금 및 채권만 필터링하여 정렬
     private var bondsOnly: [Stock] {
         store.stocks.filter { $0.category == "현금 및 채권" }
             .sorted { (s1, s2) in (Int(s1.code) ?? 0) < (Int(s2.code) ?? 0) }
-    }
-    
-    /// 각 주식의 현재가, 변동률, 주식 이름을 비동기적으로 업데이트하는 함수
-    private func updateStockPrices() async {
-        let keys = await getKey()
-        for i in store.stocks.indices {
-            let code = store.stocks[i].code
-            async let priceResult = StockPriceFetcher.fetchCurrentPrice(for: code, using: keys)
-            async let fetchedName = StockPriceFetcher.fetchStockName(for: code, using: keys)
-            let (result, name) = await (priceResult, fetchedName)
-            if result.price > 0 {
-                store.stocks[i].currentPrice = result.price
-                store.stocks[i].dailyVariation = result.variation
-            }
-            store.stocks[i].name = name
-        }
-        store.save()
     }
     
     var body: some View {
@@ -65,7 +37,7 @@ struct PortfolioView: View {
                     }
                 }
                 // 리밸런싱 필요 경고 섹션
-                if store.overallNeedsRebalancing(threshold: store.threshold) {
+                if store.needRebalance {
                     Section {
                         Text("리밸런싱 필요")
                             .foregroundColor(.red)
@@ -82,7 +54,7 @@ struct PortfolioView: View {
                                     .foregroundColor(selectedStockIDs.contains(stock.id) ? .blue : .gray)
                                 StockRowView(
                                     stock: stock,
-                                    overallTotal: store.overallTotal,
+                                    overallTotal: store.totalAssets,
                                     onEdit: { },
                                     onDelete: { }
                                 )
@@ -98,7 +70,7 @@ struct PortfolioView: View {
                         } else {
                             StockRowView(
                                 stock: stock,
-                                overallTotal: store.overallTotal,
+                                overallTotal: store.totalAssets,
                                 onEdit: { },
                                 onDelete: { }
                             )
@@ -116,7 +88,7 @@ struct PortfolioView: View {
                                     .foregroundColor(selectedStockIDs.contains(stock.id) ? .blue : .gray)
                                 StockRowView(
                                     stock: stock,
-                                    overallTotal: store.overallTotal,
+                                    overallTotal: store.totalAssets,
                                     onEdit: { },
                                     onDelete: { }
                                 )
@@ -132,24 +104,24 @@ struct PortfolioView: View {
                         } else {
                             StockRowView(
                                 stock: stock,
-                                overallTotal: store.overallTotal,
+                                overallTotal: store.totalAssets,
                                 onEdit: { },
                                 onDelete: { }
                             )
                         }
                     }
-                    // 현금 행
+                    // 현금 행: StockStore의 cashPercentage 사용 (숫자 값을 포맷팅하여 표시)
                     HStack {
                         Text("현금")
                         Spacer()
-                        Text(cashPercentage)
+                        Text(String(format: "%.1f%%", store.cashPercentage))
                             .font(.body)
                             .foregroundColor(.gray)
                     }
                     .contentShape(Rectangle())
                 }
             }
-            .refreshable { await updateStockPrices() }
+            .refreshable { await store.updateStockPrices() }
             .navigationTitle("포트폴리오")
             .toolbar {
                 if isSelectingStocks {
@@ -175,7 +147,7 @@ struct PortfolioView: View {
                     }
                 }
             }
-            // 선택 모드일 때 하단에 오버레이로 삭제 및 리밸런싱 버튼 표시
+            // 선택 모드일 때 하단 오버레이: 삭제 및 리밸런싱 버튼
             .overlay(
                 Group {
                     if isSelectingStocks {
@@ -194,24 +166,7 @@ struct PortfolioView: View {
                                 Spacer()
                                 
                                 Button("리밸런싱") {
-                                    let overallTotal = store.overallTotal
-                                    for index in store.stocks.indices {
-                                        if selectedStockIDs.contains(store.stocks[index].id) {
-                                            let stock = store.stocks[index]
-                                            if stock.targetPercentage == 0 {
-                                                store.stocks[index].quantity = 0
-                                            } else {
-                                                if stock.currentPrice > 0 {
-                                                    store.stocks[index].quantity = Int((overallTotal * (stock.targetPercentage / 100) / Double(stock.currentPrice)).rounded())
-                                                } else {
-                                                    store.stocks[index].quantity = 0
-                                                }
-                                            }
-                                        }
-                                    }
-                                    let totalStockValue = store.stocks.map { $0.currentValue }.reduce(0, +)
-                                    store.cash = overallTotal - totalStockValue
-                                    store.save()
+                                    store.rebalanceStocks(selectedIDs: selectedStockIDs)
                                     isSelectingStocks = false
                                     selectedStockIDs.removeAll()
                                 }
@@ -231,29 +186,12 @@ struct PortfolioView: View {
                 Text("현금 잔액이 음수이거나 목표 비율 합계가 100%가 아닙니다.")
             }
         }
-        // 주식 추가 시트 (StockAddView)
-        .sheet(isPresented: Binding<Bool>(
-            get: { editingStockData != nil && (editingStockData?.name.isEmpty ?? true) },
-            set: { if !$0 { editingStockData = nil } }
-        )) {
-            if let addData = editingStockData {
-                StockAddView(
-                    addData: addData,
-                    onCancel: { editingStockData = nil },
-                    onSave: { newStock in
-                        store.stocks.append(newStock)
-                        store.save()
-                        editingStockData = nil
-                    }
-                )
-            }
-        }
     }
 }
 
 struct PortfolioView_Previews: PreviewProvider {
     static var previews: some View {
-        PortfolioView(editingStockData: .constant(nil))
+        PortfolioView()
             .environmentObject(StockStore())
     }
 }

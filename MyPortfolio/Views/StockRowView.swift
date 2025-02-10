@@ -6,29 +6,8 @@ struct StockRowView: View {
     var onEdit: () -> Void
     var onDelete: () -> Void
     
-    // 현재가 기반 현재 비중 계산
-    private var currentPercentage: Double {
-        overallTotal > 0 ? (Double(stock.currentPrice * stock.quantity) / overallTotal * 100) : 0.0
-    }
-    
-    // 목표 대비 증감율 계산 (목표 비율이 0이면 0으로 처리)
-    private var changeRate: Double {
-        stock.targetPercentage > 0 ? (currentPercentage - stock.targetPercentage) / stock.targetPercentage * 100 : 0.0
-    }
-    
-    // 목표 수량 계산 (currentPrice가 0이면 0 반환)
-    private var desiredQuantity: Double {
-        guard stock.currentPrice > 0, overallTotal > 0 else { return 0.0 }
-        return overallTotal * (stock.targetPercentage / 100) / Double(stock.currentPrice)
-    }
-    
-    // 보유 수량과 목표 수량의 차이 (조정 필요 수량)
-    private var adjustment: Double {
-        desiredQuantity - Double(stock.quantity)
-    }
-    
     var body: some View {
-        HStack(alignment: .bottom) {
+        return HStack(alignment: .bottom) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(stock.name)
                     .font(.body)
@@ -50,20 +29,20 @@ struct StockRowView: View {
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
-                Text("현재: \(currentPercentage, specifier: "%.1f")%")
+                Text("현재: \(stock.currentPercentage, specifier: "%.1f")%")
                     .font(.caption)
                     .foregroundColor(.gray)
                 Text("목표: \(stock.targetPercentage, specifier: "%.1f")%")
                     .font(.caption)
                     .foregroundColor(.gray)
-                (Text(String(format: "%+6.1f", changeRate) + "%")
+                (Text(String(format: "%+6.1f", stock.changeRate) + "%")
                     .monospacedDigit()
-                    .foregroundColor(changeRate >= 0 ? .red : .blue)
+                    .foregroundColor(stock.changeRate >= 0 ? .red : .blue)
                 +
                 Text(" | ")
                     .foregroundStyle(.secondary)
                 +
-                Text(String(format: "%+d", Int(adjustment.rounded())))
+                Text(String(format: "%+d", stock.adjustment))
                     .monospacedDigit()
                 +
                 Text("주"))
@@ -72,5 +51,25 @@ struct StockRowView: View {
             }
         }
         .contentShape(Rectangle())
+    }
+}
+
+struct StockRowView_Previews: PreviewProvider {
+    static var previews: some View {
+        // 미리보기에서는 임의의 전체 자산 값을 전달합니다.
+        StockRowView(
+            stock: Stock(id: UUID(),
+                         name: "Test Stock",
+                         code: "123456",
+                         targetPercentage: 20,
+                         currentPrice: 100,
+                         quantity: 10,
+                         category: "주식",
+                         dailyVariation: 1.23),
+            overallTotal: 10000,
+            onEdit: {},
+            onDelete: {}
+        )
+        .previewLayout(.sizeThatFits)
     }
 }
