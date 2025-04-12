@@ -125,7 +125,7 @@ MyPortfolio/
 
 ## 7. 주요 기능 시연
 
-| 자동 새로고침 및 목표 비중 표시 | 주식 추가 | 리밸런싱 |
+| 새로고침 (주식 정보 업데이트) | 주식 추가 | 리밸런싱 |
 | ------------------------ | -------- | -------- |
 | ![demo1](https://github.com/j8n17/MyPortfolio/blob/main/demo/MyPortfolio_refresh.gif) | ![demo2](https://github.com/j8n17/MyPortfolio/blob/main/demo/MyPortfolio_add.gif) | ![demo3](https://github.com/j8n17/MyPortfolio/blob/main/demo/MyPortfolio_rebalancing.gif) |
 
