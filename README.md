@@ -59,41 +59,44 @@
 ## 3. 파일 구조
 
 ```
-MyPortfolio/
-├── MyPortfolioApp.swift           # 앱 진입점 및 라이프사이클 관리
-├── Info.plist
-├── Assets.xcassets/               # 앱 아이콘, 이미지 등 리소스
-├── Preview Content/               # SwiftUI 프리뷰용 데이터
+MyPortfolio/                     # 프로젝트 루트
+├── MyPortfolio.xcodeproj/
+├── MyPortfolio/                 # 실제 소스 코드가 위치하는 그룹
+│   ├── MyPortfolioApp.swift     # 앱 진입점 및 라이프사이클 관리
+│   ├── Info.plist
+│   ├── Assets.xcassets/         # 앱 아이콘, 이미지 등 리소스
+│   ├── Preview Content/         # SwiftUI 프리뷰용 데이터
+│   │
+│   ├── Views/                   # SwiftUI 뷰 정의
+│   │   ├── ContentView.swift
+│   │   ├── PortfolioView.swift
+│   │   ├── AssetStatusView.swift
+│   │   ├── StockRowView.swift
+│   │   ├── StockAddView.swift
+│   │   ├── StockDetailView.swift
+│   │   ├── SettingsView.swift
+│   │   ├── CashEditView.swift
+│   │   └── APIKeySettingView.swift
+│   │
+│   └── Utilities/               # 유틸리티 및 비즈니스 로직
+│       ├── PersistenceController.swift
+│       ├── MyPortfolioModel.xcdatamodeld/
+│       ├── Stock.swift
+│       ├── StockStore.swift
+│       ├── StockPriceFetcher.swift
+│       ├── Key.swift
+│       ├── FormatterHelper.swift
+│       ├── BackgroundTaskManager.swift
+│       ├── StockRefreshOperation.swift
+│       ├── NotificationManager.swift
+│       └── StockEditData.swift
 │
-├── Views/                         # SwiftUI 뷰 정의
-│   ├── ContentView.swift          # 메인 컨텐츠 뷰 (탭 뷰 등)
-│   ├── PortfolioView.swift        # 포트폴리오 목록 및 요약 뷰
-│   ├── AssetStatusView.swift      # 자산 현황 상세 뷰
-│   ├── StockRowView.swift         # 주식 목록의 각 행 뷰
-│   ├── StockAddView.swift         # 주식 추가/편집 뷰
-│   ├── StockDetailView.swift      # 주식 상세 정보 뷰
-│   ├── SettingsView.swift         # 설정 메인 뷰
-│   ├── CashEditView.swift         # 현금 수정 뷰
-│   └── APIKeySettingView.swift    # API 키 설정 뷰
-│
-├── Utilities/                     # 유틸리티 및 비즈니스 로직
-│   ├── PersistenceController.swift # CoreData 스택 설정
-│   ├── MyPortfolioModel.xcdatamodeld/ # CoreData 데이터 모델
-│   ├── Stock.swift                # 주식 데이터 모델 (Struct)
-│   ├── StockStore.swift           # CoreData와 상호작용하는 데이터 관리 클래스
-│   ├── StockPriceFetcher.swift    # 주가 정보 API 호출 로직
-│   ├── Key.swift                  # API 키 관리 (gitignore 필요)
-│   ├── FormatterHelper.swift      # 숫자, 날짜 등 포맷팅 헬퍼
-│   ├── BackgroundTaskManager.swift # 백그라운드 작업 관리
-│   ├── StockRefreshOperation.swift # 백그라운드 주가 업데이트 작업
-│   ├── NotificationManager.swift  # 사용자 알림 관리
-│   └── StockEditData.swift        # 주식 편집 시 사용하는 임시 데이터 구조체
-│
-├── MyPortfolio.xcodeproj/         # Xcode 프로젝트 파일
-├── StockEntity+CoreDataClass.swift # CoreData ManagedObject 클래스 (자동 생성)
-├── StockEntity+CoreDataProperties.swift # CoreData ManagedObject 속성 (자동 생성)
-├── SettingsEntity+CoreDataClass.swift # CoreData ManagedObject 클래스 (자동 생성)
-└── SettingsEntity+CoreDataProperties.swift # CoreData ManagedObject 속성 (자동 생성)
+├── StockEntity+CoreDataClass.swift
+├── StockEntity+CoreDataProperties.swift
+├── SettingsEntity+CoreDataClass.swift
+├── SettingsEntity+CoreDataProperties.swift
+├── merged_swift_files.txt       # ChatGPT 전달용 코드 병합 파일
+└── merge.py                     # 코드 병합 스크립트
 ```
 
 *참고: `merged_swift_files.txt`와 `merge.py`는 ChatGPT에게 전체 코드를 전달하기 위해 생성된 파일입니다.*
