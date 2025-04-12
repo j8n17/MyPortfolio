@@ -19,6 +19,7 @@
 4.  [기술 스택](#4-기술-스택)
 5.  [시작하기](#5-시작하기)
 6.  [ChatGPT 개발 경험](#6-chatgpt-개발-경험)
+7.  [주요 기능 시연](#7-주요-기능-시연)
 
 ---
 
@@ -119,6 +120,27 @@ MyPortfolio/
 3.  **API 키 설정:**
     *   한국투자증권 API 사용을 위한 App Key와 App Secret을 발급받습니다.
     *   앱 실행 후 설정 화면에서 입력합니다.
+
+---
+
+## 7. 주요 기능 시연
+
+<p align="center">
+  <div style="display: flex; justify-content: space-around;">
+    <figure>
+      <img src="https://github.com/j8n17/MyPortfolio/blob/main/demo/MyPortfolio_refresh.gif">
+      <figcaption align="center"><b>자동 새로고침 및 목표 비중 표시</b></figcaption>
+    </figure>
+    <figure>
+      <img src="https://github.com/j8n17/MyPortfolio/blob/main/demo/MyPortfolio_add.gif">
+      <figcaption align="center"><b>주식 추가</b></figcaption>
+    </figure>
+    <figure>
+      <img src="https://github.com/j8n17/MyPortfolio/blob/main/demo/MyPortfolio_rebalancing.gif">
+      <figcaption align="center"><b>리밸런싱</b></figcaption>
+    </figure>
+  </div>
+</p>
 
 ---
 
