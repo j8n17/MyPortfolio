@@ -125,22 +125,9 @@ MyPortfolio/
 
 ## 7. 주요 기능 시연
 
-<p align="center">
-  <div style="display: flex; justify-content: space-around;">
-    <figure>
-      <img src="https://github.com/j8n17/MyPortfolio/blob/main/demo/MyPortfolio_refresh.gif">
-      <figcaption align="center"><b>자동 새로고침 및 목표 비중 표시</b></figcaption>
-    </figure>
-    <figure>
-      <img src="https://github.com/j8n17/MyPortfolio/blob/main/demo/MyPortfolio_add.gif">
-      <figcaption align="center"><b>주식 추가</b></figcaption>
-    </figure>
-    <figure>
-      <img src="https://github.com/j8n17/MyPortfolio/blob/main/demo/MyPortfolio_rebalancing.gif">
-      <figcaption align="center"><b>리밸런싱</b></figcaption>
-    </figure>
-  </div>
-</p>
+| 자동 새로고침 및 목표 비중 표시 | 주식 추가 | 리밸런싱 |
+| ------------------------ | -------- | -------- |
+| ![demo1](https://github.com/j8n17/MyPortfolio/blob/main/demo/MyPortfolio_refresh.gif) | ![demo2](https://github.com/j8n17/MyPortfolio/blob/main/demo/MyPortfolio_add.gif) | ![demo3](https://github.com/j8n17/MyPortfolio/blob/main/demo/MyPortfolio_rebalancing.gif) |
 
 ---
 
