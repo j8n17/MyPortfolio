@@ -6,6 +6,8 @@
 [![API](https://img.shields.io/badge/API-한국투자증권-yellow.svg)](https://apiportal.koreainvestment.com/)
 [![AI Model](https://img.shields.io/badge/AI%20Model-ChatGPT%20(o3--mini)-green.svg)](https://openai.com/)
 
+**개발 기간:** 2025.02.03 ~ 2025.02.10
+
 **본 프로젝트는 Swift나 iOS 앱 개발 경험이 없는 상태에서 ChatGPT(o3-mini)를 활용하여 iOS 앱을 개발하는 과정을 기록하고 경험을 공유하는 것을 주목적으로 합니다.** 그 과정에서 SwiftUI와 CoreData를 사용하여 개인 포트폴리오 관리 기능을 구현했습니다. 사용자는 주식, 현금 등의 자산을 등록하고, 목표 비중과 현재 비중을 비교하며 리밸런싱을 관리할 수 있습니다. 백그라운드에서 주기적으로 주식 가격을 업데이트하고, 설정된 임계값을 초과하면 사용자에게 알림을 보냅니다.
 
 ---
